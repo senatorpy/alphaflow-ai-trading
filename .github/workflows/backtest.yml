@@ -1,0 +1,65 @@
+# File: .github/workflows/backtest.yml
+name: Daily Backtest & Report
+
+# Define when the workflow should run
+on:
+  # Schedule it to run daily (at a specific UTC time)
+  schedule:
+    # Cron syntax: "Minute Hour DayOfMonth Month DayOfWeek"
+    # This example runs every day at 9:00 AM UTC (which is 12:30 PM Tehran time)
+    - cron: '0 9 * * *'
+  # Allows you to run it manually from the GitHub Actions tab
+  workflow_dispatch:
+
+# Define the job(s) to run
+jobs:
+  backtest:
+    # Specify the runner environment (Ubuntu Linux)
+    runs-on: ubuntu-latest
+
+    # Define the steps for the job
+    steps:
+      # 1. Checkout the code from the repository
+      - name: Checkout Code
+        uses: actions/checkout@v4 # This is a standard GitHub Action
+
+      # 2. Setup Python on the runner
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10' # Specify the Python version
+
+      # 3. Install project dependencies
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Check if requirements.txt exists, if so, install from it
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          # If not, install the core packages needed (redundancy)
+          pip install ccxt tensorflow pandas scikit-learn matplotlib numpy
+
+      # 4. Run the backtest script
+      # The environment variables are passed securely from GitHub Secrets
+      - name: Run Backtest Script
+        env:
+          LBANK_API_KEY: ${{ secrets.LBANK_API_KEY }}
+          LBANK_SECRET_KEY: ${{ secrets.LBANK_SECRET_KEY }}
+        run: |
+          # Run the backtester module using Python
+          python -m src.backtesting.backtester
+
+      # 5. (Optional but recommended) Upload the results (plot, logs) as an Artifact
+      # This allows you to download the results of each run from GitHub
+      - name: Upload Backtest Results (Artifact)
+        uses: actions/upload-artifact@v3
+        with:
+          name: backtest-results
+          path: |
+            backtest_results.png
+            # You could also save logs to a file and upload them
+            # backtest_log.txt
+
+      # 6. (Advanced) Commit and Push the Plot back to the repo (to display on README)
+      # This requires setting up a Personal Access Token (PAT) for the repo.
+      # For now, we'll skip this and rely on Artifacts.
+      # A future step could involve this for auto-updating a "live" performance chart.
