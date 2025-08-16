@@ -51,7 +51,7 @@ jobs:
       # 5. (Optional but recommended) Upload the results (plot, logs) as an Artifact
       # This allows you to download the results of each run from GitHub
       - name: Upload Backtest Results (Artifact)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4 # <-- CHANGED FROM v3 to v4
         with:
           name: backtest-results
           path: |
